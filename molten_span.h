@@ -76,6 +76,23 @@ void ot_span_add_ba_builder(zval *span, const char *key, const char *value, long
 void ot_span_add_ba_ex_builder(zval *span, const char *key, const char *value, long timestamp, struct mo_chain_st *pct, uint8_t ba_type);
 /* }}} */
 
+/* {{{ span context for build trace context relation */
+
+/* the traceId and sampled can use global, no need copy point for every context */
+typedef struct {
+    char *parent_span_id;
+    char *span_id;
+    int span_count;
+} mo_span_context;
+
+void push_normal_span_context(mo_stack *stack);
+void pop_normal_span_context(mo_stack *stack);
+
+void push_level_span_context(mo_stack *stack);
+void pop_normal_span_context(mo_stack *stack);
+/* }}} */
+
+
 /* {{{ pt span ctor */
 static void inline mo_span_ctor(mo_span_builder *psb, char *span_format, char *span_id_format)
 {

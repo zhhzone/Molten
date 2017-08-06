@@ -16,6 +16,30 @@
 
 #include "molten_span.h"
 
+/* {{{ build normal span cntext */
+static void normal_span_context_dtor(void *element)
+{
+    efree((char *)element);
+}
+
+void init_normal_span_context(mo_stack *stack)
+{
+    mo_stack_init(stack, sizeof(char *), &normal_span_context_dtor);
+}
+
+void push_normal_span_context(mo_stack *stack)
+{
+    char *span_id;
+    build_span_id_random(*span_id, NULL, 0);
+    mo_stack_push(stack, span_id);
+}
+
+void pop_normal_span_context(mo_stack *stack)
+{
+}
+
+void retrieve
+
 /* {{{ build zipkin format main span */
 void zn_start_span(zval **span, char *trace_id, char *server_name, char *span_id, char *parent_id, long timestamp, long duration) 
 {
