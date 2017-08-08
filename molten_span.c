@@ -16,29 +16,131 @@
 
 #include "molten_span.h"
 
-/* {{{ build normal span cntext */
-static void normal_span_context_dtor(void *element)
+/* use span context */
+/* {{{ build span context */
+void span_context_dtor(void *element)
 {
-    efree((char *)element);
+#ifdef USE_LEVEL_ID
+    mo_span_context *context = (mo_span_context *)element;
+    efree(context->span_id);
+    context->span_count = 0;
+#else
+    efree(*(char **)element);
+#endif
+}
+/* }}} */
+
+/* {{{ init span context */
+void init_span_context(mo_stack *stack)
+{
+#ifdef USE_LEVEL_ID
+    mo_stack_init(stack, sizeof(mo_span_context), &level_span_context_dtor);
+#else
+    mo_stack_init(stack, sizeof(char *), &span_context_dtor);
+#endif
+}
+/* }}} */
+
+/* {{{ push span context */
+void push_span_context(mo_stack *stack)
+{
+#ifdef USE_LEVEL_ID
+    char *span_id; 
+    mo_span_context context;
+    if (!mo_stack_empty(stack)) {
+        mo_span_context *parent_node = mo_stack_sec_elemement(stack):
+        build_span_id_level(&span_id, parent_node->span_id, parent_node->span_count);
+        parent_node->span_count++;
+    } else {
+        build_span_id_level(&span_id, NULL, 0);
+    }
+    
+    context.span_id = span_id;
+    context.span_count = 0;
+    mo_stack_push(stack, &context);
+#else
+    char *span_id = NULL;
+    build_span_id_random(&span_id, NULL, 0);
+    mo_stack_push(stack, &span_id);
+#endif
+}
+/* }}} */
+
+void push_span_context_with_id(mo_stack *stack, char *span_id)
+{
+    char *tmp_span_id = estrdup(span_id);
+#ifdef USE_LEVEL_ID
+    mo_span_context context;
+    if (!mo_stack_empty(stack)) {
+        mo_span_context *parent_node = mo_stack_sec_elemement(stack):
+        parent_node->span_count++;
+    }
+    context.span_id = span_id;
+    context.span_count = 0;
+    mo_stack_push(stack, &context);
+#else
+    mo_stack_push(stack, &tmp_span_id);
+#endif
 }
 
-void init_normal_span_context(mo_stack *stack)
+
+/* {{{ pop span context */
+void pop_span_context(mo_stack *stack)
 {
-    mo_stack_init(stack, sizeof(char *), &normal_span_context_dtor);
+    mo_stack_pop(stack, NULL);
+}
+/* }}} */
+
+/* {{{ retrieve span id */
+void retrieve_span_id(mo_stack *stack, char **span_id)
+{
+#ifdef USE_LEVEL_ID
+    mo_span_context *context = (mo_span_context *) mo_stack_top(stack);
+    *span_id = context->span_id;
+#else
+    char **sid = (char **)mo_stack_top(stack);
+    *span_id = *sid;
+#endif
+}
+/* }}} */
+
+/* {{{ retrieve parent span id */
+void retrieve_parent_span_id(mo_stack *stack, char **parent_span_id)
+{
+#ifdef USE_LEVEL_ID
+   mo_span_context *context = (mo_span_context *) mo_stack_sec_element(stack);
+   if (context == NULL) {
+        *parent_span_id = NULL;
+   } else {
+        *span_id = context->span_id;
+   }
+#else
+    char **psid = (char **)mo_stack_sec_element(stack);
+    if (psid == NULL) {
+        *parent_span_id = NULL;
+    } else {
+        *parent_span_id = *psid;
+    }
+#endif
+}
+/* }}} */
+
+/* {{{ destroy all span context */
+void destroy_span_context(mo_stack *stack)
+{
+   mo_stack_destroy(stack);
+}
+/* }}} */
+
+void retrieve_span_id_4_frame(mo_frame_t *frame, char **span_id)
+{
+   retrieve_span_id(frame->span_stack, span_id);
 }
 
-void push_normal_span_context(mo_stack *stack)
+void retrieve_parent_span_id_4_frame(mo_frame_t *frame, char **parent_span_id)
 {
-    char *span_id;
-    build_span_id_random(*span_id, NULL, 0);
-    mo_stack_push(stack, span_id);
+   retrieve_span_id(frame->span_stack, parent_span_id);
 }
-
-void pop_normal_span_context(mo_stack *stack)
-{
-}
-
-void retrieve
 
 /* {{{ build zipkin format main span */
 void zn_start_span(zval **span, char *trace_id, char *server_name, char *span_id, char *parent_id, long timestamp, long duration) 
@@ -75,7 +177,13 @@ void zn_start_span(zval **span, char *trace_id, char *server_name, char *span_id
 /* {{{ build zipkin span ex */
 void zn_start_span_ex(zval **span, char *server_name, struct mo_chain_st *pct, mo_frame_t *frame)
 {
-    build_main_span(span, pct->pch.trace_id->val, server_name, frame->span_id, pct->pch.span_id->val, frame->entry_time, frame->exit_time - frame->entry_time);
+    char *span_id;
+    char *parent_span_id;
+
+    retrieve_span_id_4_frame(frame, &span_id);
+    retrieve_parent_span_id_4_frame(frame, &parent_span_id);
+
+    build_main_span(span, pct->pch.trace_id->val, server_name, span_id, parent_span_id, frame->entry_time, frame->exit_time - frame->entry_time);
 }
 /* }}} */
 
@@ -312,7 +420,13 @@ void zn_start_span_builder(zval **span, char *service_name, char *trace_id, char
 
 void zn_start_span_ex_builder(zval **span, char *service_name, struct mo_chain_st *pct, mo_frame_t *frame, uint8_t an_type)
 {
-    zn_start_span_builder(span, service_name, pct->pch.trace_id->val, frame->span_id, pct->pch.span_id->val, frame->entry_time, frame->exit_time, pct, an_type);
+    char *span_id;
+    char *parent_span_id;
+
+    retrieve_span_id_4_frame(frame, &span_id);
+    retrieve_parent_span_id_4_frame(frame, &parent_span_id);
+
+    zn_start_span_builder(span, service_name, pct->pch.trace_id->val, span_id, parent_span_id, frame->entry_time, frame->exit_time, pct, an_type);
 }
 
 void zn_span_add_ba_builder(zval *span, const char *key, const char *value, long timestamp, char *service_name, char *ipv4, long port, uint8_t ba_type)
@@ -338,7 +452,13 @@ void ot_start_span_builder(zval **span, char *service_name, char *trace_id, char
 
 void ot_start_span_ex_builder(zval **span, char *service_name, struct mo_chain_st *pct, mo_frame_t *frame, uint8_t an_type)
 {
-    ot_start_span_builder(span, service_name, pct->pch.trace_id->val, frame->span_id, pct->pch.span_id->val, frame->entry_time, frame->exit_time, pct, an_type);
+    char *span_id;
+    char *parent_span_id;
+
+    retrieve_span_id_4_frame(frame, &span_id);
+    retrieve_parent_span_id_4_frame(frame, &parent_span_id);
+
+    ot_start_span_builder(span, service_name, pct->pch.trace_id->val, span_id, parent_span_id, frame->entry_time, frame->exit_time, pct, an_type);
 }
 
 void ot_span_add_ba_builder(zval *span, const char *key, const char *value, long timestamp, char *service_name, char *ipv4, long port, uint8_t ba_type)

@@ -24,6 +24,7 @@
 
 #include "php7_wrapper.h"
 #include "molten_log.h"
+#include "molten_stack.h"
 
 /* key val map */
 typedef struct {
@@ -61,6 +62,9 @@ typedef struct mo_chain_st {
 
     /* error info */
     zval *error_list;
+
+    /* span stack */
+    mo_stack *span_stack;               /* link to global stack */ 
     
     /* excute time */
     long execute_begin_time;            /* execute begin time */
@@ -102,6 +106,7 @@ typedef struct {
 #endif
     zval            *object;          /* object */
     zval            *ori_ret;         /* origin ret */
-    char            *span_id;         /* current span id */
+
+    mo_stack        *span_stack;      /* global span stack */
 } mo_frame_t;
 #endif

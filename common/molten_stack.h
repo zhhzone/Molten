@@ -16,19 +16,22 @@
 #ifndef MOLTEN_STACK_H
 #define MOLTEN_STACK_H
 
+#include "php.h" 
+
 #define STACK_BLOCK_SIZE    64
 
-/* our stack element only store data point for performance */
-typedef void (*dtor_func)(void *element);
+
+/* our stack epement only store data point for performance */
+typedef void (*stack_dtor_func)(void *element);
 
 /* data will be delete */
 typedef struct {
     int size, top, max;
     void *elements;
-    dtor_func dtor;
+    stack_dtor_func dtor;
 } mo_stack;
 
-void mo_stack_init(mo_stack *stack, int size, dtor_func dtor);
+void mo_stack_init(mo_stack *stack, int size, stack_dtor_func dtor);
 int mo_stack_push(mo_stack *stack, void *element);
 void *mo_stack_top(mo_stack *stack);
 void mo_stack_del_top(mo_stack *stack);
@@ -36,7 +39,8 @@ void mo_stack_del_top(mo_stack *stack);
 void mo_stack_pop(mo_stack *stack, void *element);
 void mo_stack_destroy(mo_stack *stack);
 int mo_stack_empty(mo_stack *stack);
-int mo_stack_top(mo_stack *stack);
+int mo_stack_num(mo_stack *stack);
 void *mo_stack_element(mo_stack *stack, int offset);
+void *mo_stack_sec_element(mo_stack *stack);
 
 #endif

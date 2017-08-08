@@ -177,7 +177,11 @@ static void curl_multi_remove_handle_record(mo_interceptor_t *pit, mo_frame_t *f
     if (mo_zend_hash_index_zval_find(Z_ARRVAL_P(pit->span_info_cache), Z_RESVAL_P(ch), (void **)&start_time) == SUCCESS) {
         if (MO_Z_TYPE_P(start_time) == IS_LONG) {
             zval *curl_span;
-            pit->psb->start_span(&curl_span, "php_curl_multi", pit->pct->pch.trace_id->val, frame->span_id, pit->pct->pch.span_id->val, Z_LVAL_P(start_time), frame->exit_time, pit->pct, AN_CLIENT);
+            char *span_id;
+            char *parent_span_id;
+            retrieve_span_id_4_frame(frame, &span_id);
+            retrieve_parent_span_id_4_frame(frame, &parent_span_id);
+            pit->psb->start_span(&curl_span, "php_curl_multi", pit->pct->pch.trace_id->val, span_id, parent_span_id, Z_LVAL_P(start_time), frame->exit_time, pit->pct, AN_CLIENT);
             build_curl_bannotation(curl_span, frame->exit_time, pit, ch, "curl_multi_exec", 1);
             mo_chain_add_span(pit->pct->pcl, curl_span);
         }

@@ -16,9 +16,9 @@
 
 #include "molten_stack.h"
 
-#define STACK_ELE(stack, m) ((void *)((char *)(stack)->elements + (stack)->size * (n)))
+#define STACK_ELE(stack, m) ((void *)((char *)(stack)->elements + (stack)->size * (m)))
 
-void mo_stack_init(mo_stack *stack, int size, dtor_func dtor)
+void mo_stack_init(mo_stack *stack, int size, stack_dtor_func dtor)
 {
     stack->max = 0;
     stack->size = size;
@@ -30,8 +30,8 @@ void mo_stack_init(mo_stack *stack, int size, dtor_func dtor)
 int mo_stack_push(mo_stack *stack, void *element)
 {
     if (stack->top >= stack->max) {
-        stack->max += STACK_BLOC_SZE;
-        stack->elements = erealloc(stack->elements, stack->max * stack->size, 0);
+        stack->max += STACK_BLOCK_SIZE;
+        stack->elements = erealloc(stack->elements, (stack->max * stack->size));
     }
     memcpy(STACK_ELE(stack, stack->top), element, stack->size);
     return stack->top++;
@@ -48,7 +48,16 @@ void *mo_stack_top(mo_stack *stack)
 
 void *mo_stack_element(mo_stack *stack, int offset)
 {
-    return STACK_ELE(stack, offset - 1);
+    return STACK_ELE(stack, (stack->top - 1 - offset));
+}
+
+void *mo_stack_sec_element(mo_stack *stack)
+{
+    if (stack->top > 1) {
+        return mo_stack_element(stack, 1);
+    } else {
+        return NULL;
+    }
 }
 
 void mo_stack_del_top(mo_stack *stack)
@@ -59,19 +68,14 @@ void mo_stack_del_top(mo_stack *stack)
 
 void mo_stack_pop(mo_stack *stack, void *element)
 {
-    memcpy(element, STACK_ELE(stack, stack->top-1), stack->size);
-    mo_stack_del_top(stack);
-}
-
-void mo_stack_destroy(mo_stack *stack)
-{
-    if (stack->elements) {
-        efree(stack->elements);
-        stack->max = 0;
-        stack->top = 0;
-        stack->dtor = NULL;
-        stack->elements = NULL;
+    if (stack->top <= 0) {
+        return;
     }
+
+    if (element != NULL) {
+        memcpy(element, STACK_ELE(stack, stack->top-1), stack->size);
+    }
+    mo_stack_del_top(stack);
 }
 
 int mo_stack_empty(mo_stack *stack)
@@ -79,7 +83,22 @@ int mo_stack_empty(mo_stack *stack)
     return stack->top == 0;  
 }
 
-int mo_stack_top(mo_stack *stack)
+int mo_stack_num(mo_stack *stack)
 {
     return stack->top;
+}
+
+void mo_stack_destroy(mo_stack *stack)
+{
+    int i;
+    if (stack->elements) {
+        for (i = 0; i < stack->top; i++) {
+            stack->dtor(stack->elements + stack->size * i);
+        }
+        efree(stack->elements);
+        stack->max = 0;
+        stack->top = 0;
+        stack->dtor = NULL;
+        stack->elements = NULL;
+    }
 }
