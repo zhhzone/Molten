@@ -47,6 +47,7 @@ PHP_FUNCTION(molten_curl_setopt);
 PHP_FUNCTION(molten_curl_exec);
 PHP_FUNCTION(molten_curl_setopt_array);
 PHP_FUNCTION(molten_curl_reset);
+PHP_FUNCTION(molten_span_format);
 
 void add_http_trace_header(mo_chain_t *pct, zval *header, char *span_id);
 static void frame_build(mo_frame_t *frame, zend_bool internal, unsigned char type, zend_execute_data *caller, zend_execute_data *ex, zend_op_array *op_array TSRMLS_DC);
@@ -95,6 +96,7 @@ const zend_function_entry molten_functions[] = {
     PHP_FE(molten_curl_setopt_array, NULL)
     PHP_FE(molten_curl_exec, NULL)
     PHP_FE(molten_curl_reset, NULL)
+    PHP_FE(molten_span_format, NULL)
 #ifdef PHP_FE_END
     PHP_FE_END  /* Must be the last line in trace_functions[] */
 #else
@@ -427,6 +429,17 @@ PHP_FUNCTION(molten_curl_reset)
 
     /* after */
     /* donothing */
+}
+/* }}} */
+
+/* {{{ molten span format */
+PHP_FUNCTION(molten_span_format)
+{ 
+#ifdef USE_LEVEL_ID
+    RETURN_STRINGL("level", sizeof("level") -1, 1);
+#else
+    RETURN_STRINGL("random", sizeof("random") -1, 1);
+#endif
 }
 /* }}} */
 
