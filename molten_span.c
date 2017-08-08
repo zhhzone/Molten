@@ -34,7 +34,7 @@ void span_context_dtor(void *element)
 void init_span_context(mo_stack *stack)
 {
 #ifdef USE_LEVEL_ID
-    mo_stack_init(stack, sizeof(mo_span_context), &level_span_context_dtor);
+    mo_stack_init(stack, sizeof(mo_span_context), &span_context_dtor);
 #else
     mo_stack_init(stack, sizeof(char *), &span_context_dtor);
 #endif
@@ -48,7 +48,7 @@ void push_span_context(mo_stack *stack)
     char *span_id; 
     mo_span_context context;
     if (!mo_stack_empty(stack)) {
-        mo_span_context *parent_node = mo_stack_sec_elemement(stack):
+        mo_span_context *parent_node = (mo_span_context *)mo_stack_top(stack);
         build_span_id_level(&span_id, parent_node->span_id, parent_node->span_count);
         parent_node->span_count++;
     } else {
@@ -56,7 +56,7 @@ void push_span_context(mo_stack *stack)
     }
     
     context.span_id = span_id;
-    context.span_count = 0;
+    context.span_count = 1;
     mo_stack_push(stack, &context);
 #else
     char *span_id = NULL;
@@ -66,23 +66,24 @@ void push_span_context(mo_stack *stack)
 }
 /* }}} */
 
+/* {{{ push span context with id */
 void push_span_context_with_id(mo_stack *stack, char *span_id)
 {
     char *tmp_span_id = estrdup(span_id);
 #ifdef USE_LEVEL_ID
     mo_span_context context;
     if (!mo_stack_empty(stack)) {
-        mo_span_context *parent_node = mo_stack_sec_elemement(stack):
+        mo_span_context *parent_node = (mo_span_context *)mo_stack_top(stack);
         parent_node->span_count++;
     }
     context.span_id = span_id;
-    context.span_count = 0;
+    context.span_count = 1;
     mo_stack_push(stack, &context);
 #else
     mo_stack_push(stack, &tmp_span_id);
 #endif
 }
-
+/* }}} */
 
 /* {{{ pop span context */
 void pop_span_context(mo_stack *stack)
@@ -112,7 +113,7 @@ void retrieve_parent_span_id(mo_stack *stack, char **parent_span_id)
    if (context == NULL) {
         *parent_span_id = NULL;
    } else {
-        *span_id = context->span_id;
+        *parent_span_id = context->span_id;
    }
 #else
     char **psid = (char **)mo_stack_sec_element(stack);

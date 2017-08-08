@@ -23,7 +23,7 @@ if test "$PHP_PRACING" != "no"; then
 
   dnl check support level span id
   if test "$PHP_LEVEL_ID" != "no"; then
-      AC_DEFINE([USE_LEVEL_ID, 1, [Enable level span id]])
+      AC_DEFINE(USE_LEVEL_ID, 1, [Enable level span id])
   fi
 
   dnl check for php json
