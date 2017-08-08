@@ -284,7 +284,7 @@ PHP_FUNCTION(molten_curl_exec)
 {
     /* before */
     zval *res;
-    char *span_id;
+    char *span_id = NULL;
     uint64_t entry_time;
     
     /* build span_id */
@@ -436,9 +436,17 @@ PHP_FUNCTION(molten_curl_reset)
 PHP_FUNCTION(molten_span_format)
 { 
 #ifdef USE_LEVEL_ID
+#if PHP_MAJOR_VERSION < 7
     RETURN_STRINGL("level", sizeof("level") -1, 1);
 #else
+    RETURN_STRINGL("level", sizeof("level") -1);
+#endif
+#else
+#if PHP_MAJOR_VERSION < 7
     RETURN_STRINGL("random", sizeof("random") -1, 1);
+#else
+    RETURN_STRINGL("random", sizeof("random") -1);
+#endif
 #endif
 }
 /* }}} */

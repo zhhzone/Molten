@@ -97,10 +97,18 @@ void retrieve_span_id(mo_stack *stack, char **span_id)
 {
 #ifdef USE_LEVEL_ID
     mo_span_context *context = (mo_span_context *) mo_stack_top(stack);
-    *span_id = context->span_id;
+    if (context == NULL) {
+        *span_id = NULL;
+    } else {
+        *span_id = context->span_id;
+    }
 #else
     char **sid = (char **)mo_stack_top(stack);
-    *span_id = *sid;
+    if (sid == NULL) {
+        *span_id = NULL;
+    } else {
+        *span_id = *sid;
+    }
 #endif
 }
 /* }}} */

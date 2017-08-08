@@ -30,7 +30,7 @@ void mo_stack_init(mo_stack *stack, int size, stack_dtor_func dtor)
 int mo_stack_push(mo_stack *stack, void *element)
 {
     if (stack->top >= stack->max) {
-        stack->max += STACK_BLOCK_SIZE;
+        stack->max += MO_STACK_BLOCK_SIZE;
         stack->elements = erealloc(stack->elements, (stack->max * stack->size));
     }
     memcpy(STACK_ELE(stack, stack->top), element, stack->size);

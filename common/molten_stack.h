@@ -18,7 +18,7 @@
 
 #include "php.h" 
 
-#define STACK_BLOCK_SIZE    64
+#define MO_STACK_BLOCK_SIZE    64
 
 
 /* our stack epement only store data point for performance */
