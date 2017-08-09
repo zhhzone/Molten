@@ -62,7 +62,7 @@ void *mo_stack_sec_element(mo_stack *stack)
 
 void mo_stack_del_top(mo_stack *stack)
 {
-    stack->dtor(STACK_ELE(stack, stack->top-1));
+    stack->dtor(STACK_ELE(stack, stack->top - 1));
     --stack->top;
 }
 

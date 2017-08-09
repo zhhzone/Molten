@@ -148,7 +148,7 @@ void retrieve_span_id_4_frame(mo_frame_t *frame, char **span_id)
 
 void retrieve_parent_span_id_4_frame(mo_frame_t *frame, char **parent_span_id)
 {
-   retrieve_span_id(frame->span_stack, parent_span_id);
+   retrieve_parent_span_id(frame->span_stack, parent_span_id);
 }
 
 /* {{{ build zipkin format main span */

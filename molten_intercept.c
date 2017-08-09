@@ -1215,6 +1215,112 @@ static void mongodb_server_record(mo_interceptor_t *pit, mo_frame_t *frame)
 }
 /* }}} */
 
+/************************************************/
+/******************guzzle***********************/
+/************************************************/
+/* {{{ guzzle request record */
+static void guzzle_request_record(mo_interceptor_t *pit, mo_frame_t *frame)
+{
+    zval *client = frame->object;    
+
+    zval *span = build_com_record(pit, frame, 0);
+
+    /* add method */
+    GET_FUNC_ARG(method,0);
+    if (frame->arg_count >= 1 && MO_Z_TYPE_P(method) == IS_STRING) {
+        pit->psb->span_add_ba_ex(span,  "http.method", Z_STRVAL_P(method), frame->exit_time, pit->pct, BA_NORMAL);
+    }
+
+    /* add uri */
+    GET_FUNC_ARG(uri,1);
+    if (frame->arg_count >= 2 && MO_Z_TYPE_P(uri) == IS_STRING) {
+        pit->psb->span_add_ba_ex(span,  "http.uri", Z_STRVAL_P(uri), frame->exit_time, pit->pct, BA_NORMAL);
+    }
+
+    /* get status */
+    zval *response = frame->ori_ret;
+    if (response != NULL && MO_Z_TYPE_P(response) == IS_OBJECT) {
+        zval status_code;
+        zval status_function;
+        MO_ZVAL_STRING(&status_function, "getStatusCode", 1);
+        if (mo_call_user_function(NULL, &response, &status_function, &status_code, 0, NULL) == SUCCESS) {
+            convert_to_string(&status_code);
+            pit->psb->span_add_ba_ex(span,  "http.status", Z_STRVAL(status_code), frame->exit_time, pit->pct, BA_NORMAL);
+        }
+        mo_zval_dtor(&status_function);
+        mo_zval_dtor(&status_code);
+    }
+
+    /* add component */
+    pit->psb->span_add_ba_ex(span,  "componet", "GuzzleHttp\\Client", frame->exit_time, pit->pct, BA_NORMAL);
+
+    /* check exception */
+    SET_DEFAULT_EXCEPTION(frame, pit);
+
+    /* add span */
+    mo_chain_add_span(pit->pct->pcl, span);
+}
+/* }}} */
+
+/************************************************/
+/******************elasticsearch*****************/
+/************************************************/
+/* {{{ es request record */
+static void es_request_record(mo_interceptor_t *pit, mo_frame_t *frame)
+{
+    zval *client = frame->object;    
+
+    zval *span = build_com_record(pit, frame, 1);
+
+    /* read transport */    
+    zval *transport = mo_zend_read_property(frame->scope, client, "transport", sizeof("transport") - 1, 1);
+    if (transport != NULL && MO_Z_TYPE_P(transport) == IS_OBJECT) {
+        zval connection;
+        zval connection_function;
+        MO_ZVAL_STRING(&connection_function, "getLastConnection", 1);
+        if (mo_call_user_function(NULL, &transport, &connection_function, &connection, 0, NULL) == SUCCESS) {
+            zval host;
+            zval host_function;
+            zval *c_tmp = &connection;
+            MO_ZVAL_STRING(&host_function, "getHost", 1);
+            if (mo_call_user_function(NULL, &c_tmp, &host_function, &host, 0, NULL) == SUCCESS) {
+
+                pit->psb->span_add_ba_ex(span,  "host", Z_STRVAL(host), frame->exit_time, pit->pct, BA_NORMAL);
+            }
+            mo_zval_dtor(&host);
+            mo_zval_dtor(&host_function);
+        }
+        mo_zval_dtor(&connection);
+        mo_zval_dtor(&connection_function);
+
+    }
+    
+    pit->psb->span_add_ba_ex(span,  "componet", "Elasticsearch\\Client", frame->exit_time, pit->pct, BA_NORMAL);
+
+    /* check exception */
+    SET_DEFAULT_EXCEPTION(frame, pit);
+
+    /* add span */
+    mo_chain_add_span(pit->pct->pcl, span);
+}
+/* }}} */
+
+
+/* {{{ default oo method record */
+static void default_oo_record(mo_interceptor_t *pit, mo_frame_t *frame)
+{
+    zval *span = build_com_record(pit, frame, 1);
+
+    pit->psb->span_add_ba_ex(span,  "componet", "Elasticsearch\\Client", frame->exit_time, pit->pct, BA_NORMAL);
+
+    /* check exception */
+    SET_DEFAULT_EXCEPTION(frame, pit);
+
+    /* add span */
+    mo_chain_add_span(pit->pct->pcl, span);
+}
+/* }}} */
+
 /* {{{ check extension load or not */
 static int extension_loaded(char *extension_name)
 {
@@ -1325,7 +1431,8 @@ void mo_intercept_ctor(mo_interceptor_t *pit, struct mo_chain_st *pct, mo_span_b
         MIE(Memcached@touchByKey);
     }
 
-   if (extension_loaded("mongodb")) {
+    /* add mongodb */
+    if (extension_loaded("mongodb")) {
         ADD_INTERCEPTOR_TAG(pit, MongoDB\\Driver\\Manager);
         INIT_INTERCEPTOR_ELE(MongoDB\\Driver\\Manager@__construct, &mongodb_record);
         INIT_INTERCEPTOR_ELE(MongoDB\\Driver\\Manager@executeBulkWrite, &mongodb_record);
@@ -1337,8 +1444,26 @@ void mo_intercept_ctor(mo_interceptor_t *pit, struct mo_chain_st *pct, mo_span_b
         INIT_INTERCEPTOR_ELE(MongoDB\\Driver\\Server@executeBulkWrite, &mongodb_server_record);
         INIT_INTERCEPTOR_ELE(MongoDB\\Driver\\Server@executeCommand, &mongodb_server_record);
         INIT_INTERCEPTOR_ELE(MongoDB\\Driver\\Server@executeQuery, &mongodb_server_record);
-   }
+    }
 
+    /* user customer */
+    /* guzzle */
+    ADD_INTERCEPTOR_TAG(pit, GuzzleHttp\\Client);
+    INIT_INTERCEPTOR_ELE(GuzzleHttp\\Client@request, &guzzle_request_record);
+
+    /* elastic search */
+    {
+        ADD_INTERCEPTOR_TAG(pit, Elasticsearch\\Client);
+        INIT_INTERCEPTOR_ELE(Elasticsearch\\Client@index, &es_request_record);
+        INIT_INTERCEPTOR_ELE(Elasticsearch\\Client@get, &es_request_record);
+        INIT_INTERCEPTOR_ELE(Elasticsearch\\Client@search, &es_request_record);
+        INIT_INTERCEPTOR_ELE(Elasticsearch\\Client@delete, &es_request_record);
+
+
+        ADD_INTERCEPTOR_TAG(pit, Elasticsearch\\Namespaces\\IndicesNamespace);
+        INIT_INTERCEPTOR_ELE(Elasticsearch\\Namespaces\\IndicesNamespace@delete, &default_oo_record);
+        INIT_INTERCEPTOR_ELE(Elasticsearch\\Namespaces\\IndicesNamespace@create, &default_oo_record);
+    }
 }
 
 /* intercept rinit */

@@ -802,8 +802,20 @@ static void frame_build(mo_frame_t *frame, zend_bool internal, unsigned char typ
     }
 #endif
 
-    /* obj */
-    frame->object = MO_EX_OBJ_ZVAL(ex);
+#if PHP_VERSION_ID < 70000
+    if (caller && MO_EX_OBJ(caller)) {
+        /* obj */
+        frame->object = MO_EX_OBJ_ZVAL(caller);
+    }
+#else
+    if (ex && MO_EX_OBJ(ex)) {
+        /* obj */
+        frame->object = MO_EX_OBJ_ZVAL(ex);
+    }
+#endif
+
+    /* scope */
+    frame->scope = EG(scope);
 
     /* args */
 #if PHP_VERSION_ID < 50300
