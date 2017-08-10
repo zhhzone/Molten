@@ -109,5 +109,7 @@ typedef struct {
     zend_class_entry    *scope;           /* class entry */
 
     mo_stack            *span_stack;      /* global span stack */
+
+    zval                *span_extra;      /* because of runtime param will be delete, so we need to get info after execute, extra for user defiend func */
 } mo_frame_t;
 #endif

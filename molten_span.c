@@ -236,6 +236,7 @@ void zn_add_span_annotation(zval *span, const char *value, long timestamp, char 
     if (mo_zend_hash_zval_find(Z_ARRVAL_P(span), "annotations", sizeof("annotations"), (void **)&annotations) == FAILURE) {
         return;
     }
+
     zval *annotation;
     MO_ALLOC_INIT_ZVAL(annotation);
     array_init(annotation);
@@ -244,6 +245,7 @@ void zn_add_span_annotation(zval *span, const char *value, long timestamp, char 
     zn_add_endpoint(annotation, service_name, ipv4, port);
     add_next_index_zval(annotations, annotation);
     MO_FREE_ALLOC_ZVAL(annotation);
+
 }
 /* }}} */
 
@@ -261,10 +263,16 @@ void zn_add_span_bannotation(zval *span, const char *key, const char *value, cha
         return;
     }
 
+    int init = 0;
     zval *bannotations;
     if (mo_zend_hash_zval_find(Z_ARRVAL_P(span), "binaryAnnotations", sizeof("binaryAnnotations"), (void **)&bannotations) == FAILURE) {
-        return;
+        /* add binaryAnnotationss */
+        MO_ALLOC_INIT_ZVAL(bannotations);
+        array_init(bannotations);
+        add_assoc_zval(span, "binaryAnnotations", bannotations);
+        init = 1;
     }
+
     zval *bannotation;
     MO_ALLOC_INIT_ZVAL(bannotation);
     array_init(bannotation);
@@ -273,6 +281,10 @@ void zn_add_span_bannotation(zval *span, const char *key, const char *value, cha
     zn_add_endpoint(bannotation, service_name, ipv4, port);
     add_next_index_zval(bannotations, bannotation);
     MO_FREE_ALLOC_ZVAL(bannotation);
+
+    if (init == 1) {
+        MO_FREE_ALLOC_ZVAL(bannotations);
+    }
 }
 /* }}} */
 

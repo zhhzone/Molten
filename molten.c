@@ -742,6 +742,9 @@ static void frame_destroy(mo_frame_t *frame)
     smart_string_free(&frame->class);
     smart_string_free(&frame->function);
     pop_span_context(&PTG(span_stack));
+    if (frame->span_extra) {
+        mo_zval_dtor(frame->span_extra);
+    }
 }
 /* }}} */
 
@@ -836,6 +839,13 @@ static void frame_build(mo_frame_t *frame, zend_bool internal, unsigned char typ
     frame->arg_count = ZEND_CALL_NUM_ARGS(ex);
 #endif
 
+    /* Something is very different between user function and internal function */
+
+    /* ori_args for user defined method/func will be dtor at some time, 
+     * so we must capture some info before execute 
+     * NOTICE, we also can add ref for every zval like 'debug_backtrace', 
+     * but it will trigger performance problem.
+     */
 #if PHP_VERSION_ID < 70000
     frame->ori_args = args;
 #else
@@ -969,6 +979,8 @@ ZEND_API void mo_execute_core(int internal, zend_execute_data *execute_data, zva
 #else
         frame_build(&frame, internal, MO_FRAME_ENTRY, caller, execute_data, NULL TSRMLS_CC);
 #endif
+        /* run capture */
+        i_ele->capture != NULL ? i_ele->capture(&PTG(pit), &frame) : NULL;  
 
         /* Register return value ptr */
 #if PHP_VERSION_ID < 70000
