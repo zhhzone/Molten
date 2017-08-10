@@ -49,10 +49,7 @@ before_install:
     - (cd php_source && ls -l ${MO_PHP_BIN} || ../.travis/php_build.sh ${TRAVIS_BUILD_DIR}/php_build php-${MO_PHP_VERSION}.tar.bz2)
 
     # install composer install vendor
-    cd tests
-    curl -s http://getcomposer.org/installer|$MO_PHP_BIN
-    $MO_PHP_BIN composer.phar install
-    cd ..
+    - (cd tests && curl -s http://getcomposer.org/installer|$MO_PHP_BIN && $MO_PHP_BIN composer.phar install)
 
     # install extension
     - (sh .travis/ext_install.sh $MO_PHP_PATH $MO_PHP_VERSION)
