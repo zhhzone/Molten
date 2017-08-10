@@ -801,7 +801,7 @@ static void frame_build(mo_frame_t *frame, zend_bool internal, unsigned char typ
         smart_string_appends(&frame->function, MO_STR(zend_resolve_method_name(MO_EX_OBJ(ex) ? MO_EX_OBJCE(ex) : zf->common.scope, zf)));
     }
 #endif
-
+    
 #if PHP_VERSION_ID < 70000
     if (caller && MO_EX_OBJ(caller)) {
         /* obj */
@@ -815,7 +815,11 @@ static void frame_build(mo_frame_t *frame, zend_bool internal, unsigned char typ
 #endif
 
     /* scope */
+#if PHP_VERSION_ID < 70100
     frame->scope = EG(scope);
+#else
+    frame->scope = EG(fake_scope);
+#endif
 
     /* args */
 #if PHP_VERSION_ID < 50300
@@ -920,6 +924,11 @@ ZEND_API void mo_execute_core(int internal, zend_execute_data *execute_data, zva
     /* In PHP 5.5 and later, execute_data is the data going to be executed, not
      * the entry point, so we switch to previous data. The internal function is
      * a exception because it's no need to execute by op_array. */
+
+    /* detail you can see file: Zend/zend_vm_execute.h.
+     * func: zend_do_fcall_common_helper_SPEC.
+     * fix: if fn.flags & ZEND_ACC_GENERATOR not zero, here is some wrong.
+     */
     if (!internal && execute_data->prev_execute_data) {
         caller = execute_data->prev_execute_data;
     }

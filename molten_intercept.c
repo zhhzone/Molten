@@ -1284,15 +1284,22 @@ static void es_request_record(mo_interceptor_t *pit, mo_frame_t *frame)
             zval *c_tmp = &connection;
             MO_ZVAL_STRING(&host_function, "getHost", 1);
             if (mo_call_user_function(NULL, &c_tmp, &host_function, &host, 0, NULL) == SUCCESS) {
-
-                pit->psb->span_add_ba_ex(span,  "host", Z_STRVAL(host), frame->exit_time, pit->pct, BA_NORMAL);
+                if (MO_Z_TYPE_P(&host) == IS_STRING) {
+                    php_url *url = php_url_parse(Z_STRVAL(host));
+                    if (url != NULL) {
+                        pit->psb->span_add_ba(span, "sa", "true", frame->exit_time, "es", url->host, url->port, BA_SA);
+                    
+                    } else {
+                        pit->psb->span_add_ba_ex(span,  "php.db.data_source", Z_STRVAL(host), frame->exit_time, pit->pct, BA_NORMAL);
+                    }
+                    php_url_free(url);
+                }
             }
             mo_zval_dtor(&host);
             mo_zval_dtor(&host_function);
         }
         mo_zval_dtor(&connection);
         mo_zval_dtor(&connection_function);
-
     }
     
     pit->psb->span_add_ba_ex(span,  "componet", "Elasticsearch\\Client", frame->exit_time, pit->pct, BA_NORMAL);

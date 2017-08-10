@@ -34,6 +34,7 @@
 #include "ext/mysqlnd/mysqlnd_structs.h"
 #endif
 
+#include "ext/standard/url.h"
 #include "ext/pcre/php_pcre.h"
 #include "Zend/zend_exceptions.h"
 
