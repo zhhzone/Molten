@@ -1342,6 +1342,7 @@ static void es_request_record(mo_interceptor_t *pit, mo_frame_t *frame)
         mo_zval_dtor(&connection_function);
     }
     
+    pit->psb->span_add_ba_ex(span,  "db.type", "elasticsearch", frame->exit_time, pit->pct, BA_NORMAL);
     pit->psb->span_add_ba_ex(span,  "componet", "Elasticsearch\\Client", frame->exit_time, pit->pct, BA_NORMAL);
 
     /* check exception */
@@ -1360,6 +1361,8 @@ static void default_es_record(mo_interceptor_t *pit, mo_frame_t *frame)
     merge_span_extra(span, frame);
 
     pit->psb->span_add_ba_ex(span,  "componet", "Elasticsearch\\Client", frame->exit_time, pit->pct, BA_NORMAL);
+
+    pit->psb->span_add_ba_ex(span,  "db.type", "elasticsearch", frame->exit_time, pit->pct, BA_NORMAL);
 
     /* check exception */
     SET_DEFAULT_EXCEPTION(frame, pit);
