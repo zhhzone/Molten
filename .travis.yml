@@ -42,6 +42,7 @@ before_install:
     - MO_PHP_PATH=${TRAVIS_BUILD_DIR}/php_build/php-${MO_PHP_VERSION}
     - MO_PHP_BIN=${MO_PHP_PATH}/bin/php
     - MO_PHP_PECL=${MO_PHP_PATH}/bin/pecl
+    - MO_PHP_TEST=${TRAVIS_BUILD_DIR}/tests
     
     # build PHP without ZTS by ourselves...
     - mkdir -p php_source php_build
@@ -49,6 +50,7 @@ before_install:
     - (cd php_source && ls -l ${MO_PHP_BIN} || ../.travis/php_build.sh ${TRAVIS_BUILD_DIR}/php_build php-${MO_PHP_VERSION}.tar.bz2)
 
     # install composer install vendor
+    - (sh .travis/composer_install.sh $MO_PHP_VERSION $MO_PHP_TEST)
     - (cd tests && curl -s http://getcomposer.org/installer|$MO_PHP_BIN && $MO_PHP_BIN composer.phar install)
 
     # install extension
