@@ -1,4 +1,5 @@
 #!/bin/bash
+
 PHP_VERSION=$1
 TEST_PATH=$2
 
