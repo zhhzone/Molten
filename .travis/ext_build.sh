@@ -6,6 +6,8 @@ function logit() {
 function build()
 {
     php_path=`cd $1; pwd`
+    add_build_flag=$2
+
     php="$php_path/bin/php"
     phpize="$php_path/bin/phpize"
     phpcfg="$php_path/bin/php-config"
@@ -20,8 +22,14 @@ function build()
 
     # configure, make
     $phpize &&
-    ./configure --with-php-config=$phpcfg && \
-    make install
+    if [ -z "$add_build_flag" ]; then
+        ./configure --with-php-config=$phpcfg && \
+        make install
+    else
+        ./configure --with-php-config=$phpcfg --enable-level-id && \
+        make install
+    fi
+
     ret=$?
 
     if [ $ret -eq 0 ]; then
@@ -48,4 +56,4 @@ fi
 logit "php_path: $php_path"
 
 # build
-build $php_path
+build $php_path $2
