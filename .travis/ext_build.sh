@@ -3,10 +3,17 @@ function logit() {
     echo "[ext_build] $@" 1>&2
 }
 
+function change_ex_name()
+{
+    new_name=$1
+    extension_dir=`$phpcfg --extension-dir`
+    cp $extension_dir/molten.so $extension_dir/${new_name}.so
+}
+
 function build()
 {
     php_path=`cd $1; pwd`
-    add_build_flag=$2
+    extension_name=$2
 
     php="$php_path/bin/php"
     phpize="$php_path/bin/phpize"
@@ -22,12 +29,13 @@ function build()
 
     # configure, make
     $phpize &&
-    if [ -z "$add_build_flag" ]; then
+    if [ -z "$extension_name" ]; then
         ./configure --with-php-config=$phpcfg && \
         make install
     else
         ./configure --with-php-config=$phpcfg --enable-level-id && \
         make install
+        change_ex_name $extension_name
     fi
 
     ret=$?
