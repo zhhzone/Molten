@@ -21,7 +21,7 @@ EOF
 if version_ge $PHP_VERSION "5.6.0"; then
     # do nothing
     echo "skip"
-elif version_ge $PHP_VERSION "5.5.0"; 
+elif version_ge $PHP_VERSION "5.5.0";  then
     cp $OLD55_JOSN  $COMPOSER_JSON
 else
     cp $OLD54_JOSN  $COMPOSER_JSON
